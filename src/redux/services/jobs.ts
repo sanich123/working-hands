@@ -6,7 +6,7 @@ export const jobsByGeolocation = apiSlice.injectEndpoints({
   endpoints: ({ query }) => ({
     getJobsByGeolocation: query<JobsByGeolocationPresponse, GeolocationParams>({
       query: ({ latitude, longitude }) => ({
-        url: `shifts/map-list-unauthorized?latitude=45.039268&longitude=38.987221`,
+        url: `shifts/map-list-unauthorized?latitude=${latitude}&longitude=${longitude}`,
       }),
     }),
   }),

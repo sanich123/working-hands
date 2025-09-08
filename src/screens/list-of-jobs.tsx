@@ -3,8 +3,15 @@ import { FlatList, Image, View } from 'react-native';
 import { ActivityIndicator, Button, Text } from 'react-native-paper';
 import { useGetJobsByGeolocationQuery } from '../redux/services/jobs';
 import { JobsResponse } from '../redux/services/types';
+import { useEffect, useState } from 'react';
+
+import GetLocation from 'react-native-get-location';
+import { checkLocationPermission } from '../utils/request-permission';
 
 export default function ListOfJobsScreen() {
+  const [premissionRequest, setPermissionRequest] = useState('');
+  const [longitude, setLongitude] = useState(0);
+  const [latitude, setLatitude] = useState(0);
   const {
     data: listOfJobs,
     isSuccess,
@@ -13,12 +20,40 @@ export default function ListOfJobsScreen() {
     isLoading,
     refetch,
   } = useGetJobsByGeolocationQuery({
-    longitude: 0,
-    latitude: 0,
+    longitude,
+    latitude,
   });
-  console.log(listOfJobs?.data);
+
+  useEffect(() => {
+    GetLocation.getCurrentPosition({
+      enableHighAccuracy: true,
+      timeout: 60000,
+    })
+      .then(location => {
+        if (location) {
+          setLongitude(location?.longitude);
+          setLatitude(location?.latitude);
+        }
+      })
+      .catch(error => {
+        const { code, message } = error;
+        console.warn(code, message);
+      });
+
+    checkLocationPermission();
+  }, [premissionRequest]);
+
   return (
-    <SafeAreaView edges={[]} style={{ flex: 1 }}>
+    <SafeAreaView
+      edges={[]}
+      style={[
+        { flex: 1 },
+        (isLoading || isError) && {
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+      ]}
+    >
       {isLoading && <ActivityIndicator size="large" />}
       {isError && (
         <>
@@ -31,12 +66,23 @@ export default function ListOfJobsScreen() {
       {isSuccess && (
         <FlatList
           data={listOfJobs?.data}
+          contentContainerStyle={
+            (isLoading || isError) && {
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }
+          }
+          ListEmptyComponent={
+            <View style={{ flex: 1 }}>
+              <Text>{`По координатам ${longitude}, ${latitude} нет доступного перечня работ`}</Text>
+            </View>
+          }
           renderItem={({
             item: {
               address,
               bonusPriceWorker,
               companyName,
-              coordinates: { longitude, latitude },
               currentWorkers,
               customerFeedbacksCount,
               customerRating,
@@ -61,11 +107,11 @@ export default function ListOfJobsScreen() {
               <Text>{currentWorkers}</Text>
               <Text>{customerFeedbacksCount}</Text>
               <Text>{customerRating}</Text>
-              <Text>{dateStartByCity}</Text>
-              <Text>{isPromotionEnabled}</Text>
+              <Text>{!!isPromotionEnabled}</Text>
               <Image source={{ uri: logo }} width={50} height={50} />
               <Text>{planWorkers}</Text>
               <Text>{priceWorker}</Text>
+              <Text>{dateStartByCity}</Text>
               <Text>{timeEndByCity}</Text>
               <Text>{timeStartByCity}</Text>
             </View>
