@@ -7,11 +7,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Provider } from 'react-redux';
 import store from './src/redux/store';
 import Toast from 'react-native-toast-message';
-
-export type RootStackParamList = {
-  ListOfJobs: undefined;
-  JobItem: {};
-};
+import { RootStackParamList } from './src/utils/navigation';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -31,7 +27,7 @@ export default function App() {
             <Stack.Screen
               name="JobItem"
               component={JobItem}
-              options={{ title: 'Отдельная работа' }}
+              options={{ title: 'Страница работы' }}
             />
           </Stack.Navigator>
         </NavigationContainer>

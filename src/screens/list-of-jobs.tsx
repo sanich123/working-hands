@@ -1,49 +1,32 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FlatList, View } from 'react-native';
-import { ActivityIndicator, Button, Text } from 'react-native-paper';
-import { useGetJobsByGeolocationQuery } from '../redux/services/jobs';
-import { useEffect, useState } from 'react';
-import { checkLocationPermission } from '../utils/request-permission';
+import { FlatList, Platform, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Button,
+  IconButton,
+  Text,
+} from 'react-native-paper';
 import JobCard from '../components/job-card';
-import { getGeopositionCoordinates } from '../utils/request-location';
+import useGetJobs from '../hooks/use-get-jobs';
 
 export default function ListOfJobsScreen() {
-  const [isReadyToRequestGeoposition, setIsReadyToRequestGeoposition] =
-    useState(false);
-  const [longitude, setLongitude] = useState(0);
-  const [latitude, setLatitude] = useState(0);
   const {
-    data: listOfJobs,
+    listOfJobs,
     isSuccess,
     isError,
     error,
     isLoading,
     refetch,
-  } = useGetJobsByGeolocationQuery({
     longitude,
     latitude,
-  });
-
-  useEffect(() => {
-    checkLocationPermission({ setIsReadyToRequestGeoposition });
-  }, []);
-
-  useEffect(() => {
-    if (isReadyToRequestGeoposition) {
-      getGeopositionCoordinates({ setLongitude, setLatitude });
-    }
-  }, [isReadyToRequestGeoposition]);
+    setLongitude,
+    setLatitude,
+  } = useGetJobs();
 
   return (
     <SafeAreaView
-      edges={[]}
-      style={[
-        { flex: 1 },
-        (isLoading || isError) && {
-          justifyContent: 'center',
-          alignItems: 'center',
-        },
-      ]}
+      edges={Platform.OS !== 'android' ? [] : ['bottom']}
+      style={[{ flex: 1 }, (isLoading || isError) && styles.centered]}
     >
       {isLoading && <ActivityIndicator size="large" />}
       {isError && (
@@ -59,14 +42,32 @@ export default function ListOfJobsScreen() {
           data={listOfJobs?.data}
           ListEmptyComponent={
             <View style={{ flex: 1 }}>
-              <Text>{`По координатам ${longitude}, ${latitude} нет доступного перечня работ`}</Text>
+              <Text
+                style={{ textAlign: 'center' }}
+              >{`По координатам ${longitude}, ${latitude} нет доступного перечня работ`}</Text>
+              <Button
+                onPress={() => {
+                  setLongitude(0);
+                  setLatitude(0);
+                }}
+              >
+                Показать все вакансии
+              </Button>
             </View>
           }
-          contentContainerStyle={{ flex: 1, justifyContent: 'center' }}
           renderItem={({ item }) => <JobCard jobInfo={item} />}
           keyExtractor={({ id }) => id}
+          initialNumToRender={10}
+          maxToRenderPerBatch={20}
         />
       )}
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
